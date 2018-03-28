@@ -34,20 +34,22 @@ class Client:
         consolehandler.setLevel(logging.INFO)
         self.rootLogger.addHandler(consolehandler)
 
+        # Socket creation
         self.sock = socket.socket(socket.AF_INET, protocol)
         self.server_address = (server_ip, 10000)
         self.rootLogger.debug('Socket created')
         self.buffer = 4096
 
+    # Function that close the socket
     def close_client(self):
         self.sock.close()
         self.rootLogger.debug('Socket closed')
 
-    #Function to add advanced logging INFO mesages
+    # Function to add advanced logging INFO messages
     def logg_info(self, msg):
         self.rootLogger.info(msg)
 
-    # Function to add advanced logging DEBUG mesages
+    # Function to add advanced logging DEBUG messages
     def logg_debug(self, msg):
         self.rootLogger.debug(msg)
 
@@ -76,21 +78,24 @@ class ClientTCP(Client):
     def __init__(self, server_ip, filename, logpath):
         Client.__init__(self, server_ip, filename, logpath, protocol=socket.SOCK_STREAM)
 
+    # Connect with server
     def connection(self):
         self.sock.connect(self.server_address)
         self.logg_debug('Connection done')
 
+    # Send data through TCP protocol
     def send_data_connected(self, msg_to_send):
         self.sock.sendall(msg_to_send)
         self.logg_debug('Data sent')
 
+    # Receive data through TCP protocol.
     def receive_data_connected(self):
         self.logg_debug('Waiting for data')
         new_data = self.sock.recv(self.buffer)
         self.logg_debug('New data received')
         return new_data
 
-
+# Treat information with available orders in order to send smaller packets.
 def treat_action(msg_to_send):
     if msg_to_send == 'switch_on':
         return 'ON'
@@ -116,6 +121,7 @@ def cliudp():
 def clitcp():
     client = ClientTCP(args.ipserver, args.file_name, args.path)
     try:
+        # Call the different functions to establish the connection, to send and receive data
         client.connection()
         msg_to_send = treat_action(args.message)
         client.send_data_connected(msg_to_send)
@@ -127,7 +133,9 @@ def clitcp():
 
 
 if __name__ == "__main__":
+    # Create an instance of the parser library.
     args = parser.parse_args()
+    # Depending on the type selected a client transport protocol will be chosen.
     if args.type == 'TCP':
         clitcp()
     elif args.type == 'UDP':

@@ -72,6 +72,7 @@ class ServerUDP(Server):
 # Class with inheritance from Server class
 class ServerTCP(Server):
     def __init__(self, pin, ip, log_path, file_name):
+        # Inherit from the Server class the init function
         Server.__init__(self, pin, ip, log_path, file_name, protocol=socket.SOCK_STREAM)
         # Listen for incoming connections
         self.sock.listen(1)
@@ -147,9 +148,10 @@ def pin_conf(pin):
 
 def servudp():
     servu = ServerUDP(args.pin, args.ip, args.path, args.file_name)  # Create an instance of the ServerUDP class
-    pin_conf(servu.pin)  # Configure the pin
+    pin_conf(servu.pin)
     try:
-        while True:  # Call the different functions to receive data and do the action asked.
+        # Call the different functions to receive data and do the action asked
+        while True:
             data_to_treat = servu.receive_data()
             msg_to_send = check_order(data_to_treat, servu.pin)
             servu.send_data(msg_to_send, servu.client_address)
@@ -173,6 +175,7 @@ def servtcp():
 if __name__ == "__main__":
     # Create an instance from the parser library.
     args = parser.parse_args()
+    # Depending on the type selected a server transport protocol will be chosen
     if args.type == 'TCP':
         servtcp()
     elif args.type == 'UDP':
