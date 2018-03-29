@@ -11,13 +11,14 @@ parser.add_argument('--message', '-m',
                     help='Request action to the server', type=str,
                     choices=['switch_on', 'switch_off', 'status'])
 parser.add_argument('--type', '-t', help='Type of client', type=str, choices=['TCP', 'UDP'])
-parser.add_argument('--path', '-pt', help='Specify the path where the log is saved', default='', type=str)
+parser.add_argument('--path', '-pt', help='Specify the path where the log is saved, actual path by default',
+                    default='.', type=str)
 parser.add_argument('--file_name', '-f', help='Name of the log file', default='client', type=str)
 
 
 # Class that include the commons between TCP and UDP
 class Client:
-    def __init__(self, server_ip, filename, logpath, protocol):
+    def __init__(self, server_ip, filename, logpath, type_of_client, protocol):
         # Advanced Logging
         #   Define format
         logformatter = logging.Formatter("%(asctime)s [%(threadName)-12.12s] [%(levelname)-5.5s]  %(message)s")
@@ -34,6 +35,7 @@ class Client:
         consolehandler.setLevel(logging.INFO)
         self.rootLogger.addHandler(consolehandler)
 
+        self.rootLogger.info("****{0} Client****".format(type_of_client))
         # Socket creation
         self.sock = socket.socket(socket.AF_INET, protocol)
         self.server_address = (server_ip, 10000)
@@ -56,9 +58,9 @@ class Client:
 
 # Class with inheritance from Client class
 class ClientUDP(Client):
-    def __init__(self, server_ip, filename, logpath):
+    def __init__(self, server_ip, filename, logpath, type_of_client):
         # Inherit from the Client class the init function
-        Client.__init__(self, server_ip, filename, logpath, protocol=socket.SOCK_DGRAM)
+        Client.__init__(self, server_ip, filename, logpath, type_of_client, protocol=socket.SOCK_DGRAM)
 
     # Send data through UDP protocol
     def send_data(self, message):
@@ -75,8 +77,8 @@ class ClientUDP(Client):
 
 
 class ClientTCP(Client):
-    def __init__(self, server_ip, filename, logpath):
-        Client.__init__(self, server_ip, filename, logpath, protocol=socket.SOCK_STREAM)
+    def __init__(self, server_ip, filename, logpath, type_of_client):
+        Client.__init__(self, server_ip, filename, logpath, type_of_client, protocol=socket.SOCK_STREAM)
 
     # Connect with server
     def connection(self):
@@ -106,7 +108,7 @@ def treat_action(msg_to_send):
 
 
 def cliudp():
-    client = ClientUDP(args.ipserver, args.file_name, args.path)
+    client = ClientUDP(args.ipserver, args.file_name, args.path, args.type)
     try:
         msg_to_send = treat_action(args.message)
         client.logg_debug(msg_to_send)
@@ -119,14 +121,15 @@ def cliudp():
 
 
 def clitcp():
-    client = ClientTCP(args.ipserver, args.file_name, args.path)
+    client = ClientTCP(args.ipserver, args.file_name, args.path, args.type)
     try:
         # Call the different functions to establish the connection, to send and receive data
         client.connection()
         msg_to_send = treat_action(args.message)
         client.send_data_connected(msg_to_send)
         msg_received = client.receive_data_connected()
-        client.logg_info(msg_received)
+        if msg_received != '':
+            client.logg_info(msg_received)
 
     finally:
         client.close_client()

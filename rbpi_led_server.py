@@ -6,18 +6,20 @@ import RPi.GPIO as GPIO
 
 # Creation of an ArgumentParser object with description of the program.
 parser = argparse.ArgumentParser(
-    description='Program that create an UDP or TCP Server, it it also collect execution data into a log file with advanced logging')
+    description='Program that create an UDP or TCP Server, it also collect execution data into a log file with advanced logging')
 parser.add_argument('--pin', '-p', help='Pin where is connected the led', type=int)
 # With IP 0.0.0.0 the server can listen to any IP from their interfaces.
 parser.add_argument('--ip', help='IP of the server', default='0.0.0.0', type=str)
 parser.add_argument('--type', '-t', help='Type of server', type=str, choices=['TCP', 'UDP'])
-parser.add_argument('--path', '-pt', help='Specify the path where the log is saved', default='', type=str)
+
+parser.add_argument('--path', '-pt', help='Specify the path where the log is saved, actual path by default',
+                    default='.', type=str)
 parser.add_argument('--file_name', '-f', help='Name of the log file', default='server', type=str)
 
 
 # Class that include the commons between TCP and UDP
 class Server:
-    def __init__(self, pin, ip, log_path, file_name, protocol):
+    def __init__(self, pin, ip, log_path, file_name, type_of_server, protocol):
         # Advanced Logging
         #   Define format
         logformatter = logging.Formatter("%(asctime)s [%(threadName)-12.12s] [%(levelname)-5.5s]  %(message)s")
@@ -34,6 +36,8 @@ class Server:
         consolehandler.setLevel(logging.INFO)
         self.rootLogger.addHandler(consolehandler)
 
+        self.rootLogger.info("****{0} Server****".format(type_of_server))
+        self.rootLogger.info("Saving log into {0}/{1}.log".format(log_path, file_name))
         self.pin = pin
         self.server_address = (ip, 10000)
         # Socket creation
@@ -51,9 +55,9 @@ class Server:
 
 # Class with inheritance from Server class
 class ServerUDP(Server):
-    def __init__(self, pin, ip, log_path, file_name):
+    def __init__(self, pin, ip, log_path, file_name, type_of_server):
         # Inherit from the Server class the init function
-        Server.__init__(self, pin, ip, log_path, file_name, protocol=socket.SOCK_DGRAM)
+        Server.__init__(self, pin, ip, log_path, file_name, type_of_server, protocol=socket.SOCK_DGRAM)
 
     # Receive data through UDP protocol.
     def receive_data(self):
@@ -71,9 +75,9 @@ class ServerUDP(Server):
 
 # Class with inheritance from Server class
 class ServerTCP(Server):
-    def __init__(self, pin, ip, log_path, file_name):
+    def __init__(self, pin, ip, log_path, file_name, type_of_server):
         # Inherit from the Server class the init function
-        Server.__init__(self, pin, ip, log_path, file_name, protocol=socket.SOCK_STREAM)
+        Server.__init__(self, pin, ip, log_path, file_name, type_of_server, protocol=socket.SOCK_STREAM)
         # Listen for incoming connections
         self.sock.listen(1)
         self.rootLogger.debug('Listening...')
@@ -147,7 +151,7 @@ def pin_conf(pin):
 
 
 def servudp():
-    servu = ServerUDP(args.pin, args.ip, args.path, args.file_name)  # Create an instance of the ServerUDP class
+    servu = ServerUDP(args.pin, args.ip, args.path, args.file_name, args.type)  # Create an instance of the ServerUDP class
     pin_conf(servu.pin)
     try:
         # Call the different functions to receive data and do the action asked
@@ -160,7 +164,7 @@ def servudp():
 
 
 def servtcp():
-    servt = ServerTCP(args.pin, args.ip, args.path, args.file_name)
+    servt = ServerTCP(args.pin, args.ip, args.path, args.file_name, args.type)
     pin_conf(servt.pin)
     while True:
         servt.accept_connections()
